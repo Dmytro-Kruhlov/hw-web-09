@@ -5,6 +5,9 @@ from itemadapter import ItemAdapter
 from scrapy.crawler import CrawlerProcess
 from scrapy.item import Item, Field
 
+from add_quotes import add_quotes
+from add_authors import add_authors
+
 
 class QuoteItem(Item):
     tags = Field()
@@ -45,6 +48,8 @@ class QuotesPipeline:
         return item
 
     def close_spider(self, spider):
+        add_authors(self.authors)
+        add_quotes(self.quotes)
         with open("quotes.json", "w", encoding="utf-8") as fd:
             json.dump(self.quotes, fd, ensure_ascii=False)
         with open("authors.json", "w", encoding="utf-8") as fd:
@@ -65,7 +70,7 @@ class QuotesSpider(scrapy.Spider):
             yield QuoteItem(tags=tags, author=author, quote=q)
             yield response.follow(
                 url=self.start_urls[0] + quote.xpath("span/a/@href").get(),
-                callback=self.nested_parse_author
+                callback=self.nested_parse_author,
             )
         next_link = response.xpath("//li[@class='next']/a/@href").get()
         if next_link:
